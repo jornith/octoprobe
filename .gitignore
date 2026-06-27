@@ -1,0 +1,25 @@
+# environments & secrets
+.env
+.venv/
+venv/
+
+# python artefacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# tooling caches
+.pytest_cache/
+.ruff_cache/
+
+# test output
+allure-results/
+allure-report/
+pacts/*.json
+pact.log
+log/
+
+# editors / os
+.idea/
+.vscode/
+.DS_Store
