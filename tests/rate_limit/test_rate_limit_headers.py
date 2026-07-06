@@ -20,17 +20,22 @@ RATE_LIMIT_HEADERS = (
 )
 
 
-def test_rate_limit_headers_present_and_numeric(api_client):
-    response = api_client.get_user(KNOWN_USER)
+@pytest.fixture(scope="module")
+def sampled_response(api_client):
+    """One live request shared by both header checks; a second fetch would
+    observe the same header contract at the cost of extra quota."""
+    return api_client.get_user(KNOWN_USER)
 
-    assert response.status_code == 200
+
+def test_rate_limit_headers_present_and_numeric(sampled_response):
+    assert sampled_response.status_code == 200
     for header in RATE_LIMIT_HEADERS:
-        assert header in response.headers, f"missing {header}"
-        assert response.headers[header].isdigit(), f"{header} must be an integer"
+        assert header in sampled_response.headers, f"missing {header}"
+        assert sampled_response.headers[header].isdigit(), f"{header} must be an integer"
 
 
-def test_rate_limit_header_values_are_consistent(api_client):
-    response = api_client.get_user(KNOWN_USER)
+def test_rate_limit_header_values_are_consistent(sampled_response):
+    response = sampled_response
 
     limit = int(response.headers["x-ratelimit-limit"])
     remaining = int(response.headers["x-ratelimit-remaining"])

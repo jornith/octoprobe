@@ -1,7 +1,7 @@
 """Transport-level HTTP client: authentication, timeouts, retries and logging.
 
-Endpoint semantics live in :mod:`src.client.github_client`; this module only
-knows how to talk HTTP to an API host.
+Endpoint methods live in github_client; this layer only knows how to talk HTTP
+to an API host.
 """
 
 import logging
@@ -14,6 +14,7 @@ logger = logging.getLogger("octoprobe.client")
 
 DEFAULT_TIMEOUT_SECONDS = 10.0
 GITHUB_API_VERSION = "2022-11-28"
+GITHUB_JSON_MEDIA_TYPE = "application/vnd.github+json"
 CONNECT_RETRIES = 2
 
 
@@ -32,13 +33,9 @@ class RateLimitExceededError(Exception):
 
 
 class BaseClient:
-    """Thin wrapper around ``httpx.Client``.
-
-    * sends GitHub media-type and API-version headers on every request;
-    * attaches a ``Bearer`` token when one is configured;
-    * retries transient connection failures at transport level;
-    * logs method, URL, status code and elapsed time for every call;
-    * converts rate-limit refusals into :class:`RateLimitExceededError`.
+    """Wraps httpx.Client: sends the GitHub media-type and API-version headers,
+    adds a Bearer token when one is set, retries transient connection failures,
+    logs each call, and raises RateLimitExceededError on a rate-limit refusal.
     """
 
     def __init__(
@@ -48,7 +45,7 @@ class BaseClient:
         timeout: float = DEFAULT_TIMEOUT_SECONDS,
     ) -> None:
         headers = {
-            "Accept": "application/vnd.github+json",
+            "Accept": GITHUB_JSON_MEDIA_TYPE,
             "X-GitHub-Api-Version": GITHUB_API_VERSION,
             "User-Agent": "octoprobe-tests",
         }
@@ -89,9 +86,10 @@ class BaseClient:
         remaining = response.headers.get("x-ratelimit-remaining")
         if retry_after is None and remaining != "0":
             return
-        raise RateLimitExceededError(
-            response, int(retry_after) if retry_after is not None else None
-        )
+        # RFC 9110 also allows an HTTP-date here; expose seconds when given,
+        # None otherwise, instead of crashing on the rarer form.
+        seconds = int(retry_after) if retry_after and retry_after.isdigit() else None
+        raise RateLimitExceededError(response, seconds)
 
     def close(self) -> None:
         self._client.close()

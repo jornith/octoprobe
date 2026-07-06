@@ -9,7 +9,29 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# The suite only reads public API data; keep the workflow token read-only.
+permissions:
+  contents: read
+
 jobs:
+  lint:
+    # ruff's result is interpreter-independent (target-version is pinned in
+    # pyproject.toml), so one run suffices instead of one per matrix leg.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Lint
+        run: ruff check .
+
   test:
     runs-on: ubuntu-latest
     strategy:
@@ -30,9 +52,6 @@ jobs:
 
       - name: Install dependencies
         run: pip install -r requirements-dev.txt
-
-      - name: Lint
-        run: ruff check .
 
       - name: Fast and medium layers (contract, positive, negative, rate limit)
         run: pytest -m "smoke or contract or negative or rate_limit" --alluredir=allure-results

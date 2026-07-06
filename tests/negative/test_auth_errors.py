@@ -30,13 +30,6 @@ def test_bad_bearer_token_yields_401(settings, bad_token):
     assert response.status_code == 401
     error = GithubErrorResponse.model_validate(response.json())
     assert error.message == "Bad credentials"
-
-
-def test_401_error_body_matches_schema(settings):
-    with GithubClient(base_url=settings.base_url, token="ghp_bogus") as client:
-        response = client.get_user(KNOWN_USER)
-
-    error = GithubErrorResponse.model_validate(response.json())
     assert error.status == "401"
     assert error.documentation_url is not None
 

@@ -12,6 +12,7 @@ from urllib.parse import urlparse
 import pytest
 from pact import Pact, Verifier, match
 
+from src.client.base_client import GITHUB_JSON_MEDIA_TYPE
 from src.client.github_client import GithubClient
 from src.schemas.user import GithubUser
 
@@ -108,7 +109,7 @@ def test_provider_honours_contract_against_live_api(consumer_exchange, settings)
         # GitHub refuses requests without a User-Agent (403 + HTML page),
         # and the pact core sends none by default.
         .add_custom_header("User-Agent", "octoprobe-pact-verifier")
-        .add_custom_header("Accept", "application/vnd.github+json")
+        .add_custom_header("Accept", GITHUB_JSON_MEDIA_TYPE)
     )
     if settings.github_token:
         verifier.add_custom_header("Authorization", f"Bearer {settings.github_token}")
