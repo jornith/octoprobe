@@ -3,6 +3,8 @@
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from src.client.base_client import DEFAULT_TIMEOUT_SECONDS
+
 
 class Settings(BaseSettings):
     """Runtime configuration for the test framework.
@@ -16,7 +18,9 @@ class Settings(BaseSettings):
 
     base_url: str = Field(default="https://api.github.com", validation_alias="GITHUB_API_BASE_URL")
     github_token: str | None = Field(default=None, validation_alias="GITHUB_TOKEN")
-    request_timeout: float = Field(default=10.0, validation_alias="REQUEST_TIMEOUT")
+    request_timeout: float = Field(
+        default=DEFAULT_TIMEOUT_SECONDS, validation_alias="REQUEST_TIMEOUT"
+    )
 
 
 def get_settings() -> Settings:
